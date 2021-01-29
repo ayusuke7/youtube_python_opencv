@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "venv/bin/python"
+    "python.pythonPath": "c:\\Users\\AYU7\\Documents\\YoutubeOpenCV\\venv\\Scripts\\python.exe",
+    "python.formatting.provider": "black"
 }
