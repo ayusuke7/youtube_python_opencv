@@ -1,17 +1,25 @@
 import cv2
 import sys
 
-source_video = "sources/zelda.mp4"
+source_video = "sources/mario.mp4"
 cap = cv2.VideoCapture(source_video)
+
+def selectROIfromFrame(frame):
+    # box (x, y, lar, alt)
+    box = cv2.selectROI("SELECT ROI", frame, fromCenter=False, showCrosshair=False)
+    print(box)
+    return box
+
 
 if __name__ == "__main__":
 
-    ret, first_frame = cap.read()
+    first_frame = cv2.imread("sources/captura.png")
 
-    if not ret:
-        sys.exit()
+    #ret, first_frame = cap.read()
 
-    box = cv2.selectROI("SELECT ROI", first_frame, fromCenter=True, showCrosshair=False)
+    #if not ret: sys.exit()
+
+    box = selectROIfromFrame(first_frame)
     tracker = cv2.TrackerCSRT_create()
     ok = tracker.init(first_frame, box)
 
@@ -22,14 +30,11 @@ if __name__ == "__main__":
         if not ret:
             break
 
-        timer = cv2.getTickCount()
-
-        #box (alt, lar, x, y)
         ok, box = tracker.update(frame)
 
         if ok:
             pt1 = (box[0], box[1])
-            pt2 = ((box[0] + box[2]), (box[1]+box[3]))
+            pt2 = ((box[0] + box[2]), (box[1] + box[3]))
             cv2.rectangle(frame, pt1, pt2, (255, 0, 0), 2, 1)
         else:
             print("FALHOU")
