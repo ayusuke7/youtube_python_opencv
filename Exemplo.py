@@ -1,44 +1,62 @@
-import cv2
-import sys
+from PIL import Image
+import requests
+import base64
+import json
 
-print(cv2.__version__)
 
-source_video = "sources/zelda.mp4"
-cap = cv2.VideoCapture(source_video)
+url = "https://vision.googleapis.com/v1/images:annotate?key=AIzaSyDi6yw0t-UxDE8gU0JR6q09Xg493DpuKi8"
+
+
+def splitImageCaptcha(source):
+
+    img = Image.open(source)
+
+    width, height = img.size
+
+    count = 0
+
+    for x in range(5):
+        size = (width / 5)
+        left = size * count
+        right = left + size
+        coords = (left, 0, right, height)
+        crop = img.crop(coords)
+
+        crop.save("sources/crops/crop"+str(count+1)+".png", "PNG")
+        count += 1
+
+
+def googleVisionApi():
+
+    source = "sources/crops/crop3.png"
+
+    with open(source, "rb") as img_file:
+        my_base64 = base64.b64encode(img_file.read())
+
+    data = {
+        "requests": [
+            {
+                "image": {
+                    "content": my_base64.decode("utf-8")
+                },
+                "features": [
+                    {"type": "OBJECT_LOCALIZATION"},
+                    {"type": "LANDMARK_DETECTION"},
+                    {"type": "WEB_DETECTION"},
+                ],
+            }
+        ]
+    }
+
+    r = requests.post(url=url, data=json.dumps(data))
+
+    print(json.dumps(r.json(), indent=2))
+
 
 if __name__ == "__main__":
 
-    ret, first_frame = cap.read()
+    source = "sources/captcha.png"
 
-    if not ret:
-        sys.exit()
+    splitImageCaptcha(source)
 
-    #(421, 314, 169, 260)
-    box = cv2.selectROI("select roi", first_frame,
-                        fromCenter=False, showCrosshair=False)
-
-    tracker = cv2.TrackerKCF_create()
-    ok = tracker.init(first_frame, box)
-
-    while cap.isOpened():
-
-        ret, frame = cap.read()
-
-        if not ret:
-            break
-
-        ok, box = tracker.update(frame)
-
-        if ok:
-            pt1 = (box[0], box[1])
-            pt2 = ((box[0] + box[2]), (box[1] + box[3]))
-            cv2.rectangle(frame, pt1, pt2, (255, 0, 0), 2, 1)
-        else:
-            print("FALHOU")
-
-        cv2.imshow("Tracking", frame)
-
-        if cv2.waitKey(1) == 27:
-            break
-
-    cv2.destroyAllWindows()
+    googleVisionApi()
