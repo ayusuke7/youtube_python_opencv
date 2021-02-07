@@ -6,8 +6,22 @@ import numpy as np
 orange_color = [46, 64, 255]
 blue_color = [235, 173, 138]
 
-kernel = np.ones((10, 10), np.uint8)
-camera = cv2.VideoCapture("sources/futebol1.mp4")
+kernel = np.ones((5, 5), np.uint8)
+camera = cv2.VideoCapture("sources/cubo.mkv")
+
+janelas = []
+
+
+def show(name, frame):
+
+    cv2.namedWindow(name, cv2.WINDOW_AUTOSIZE)
+
+    """ open new windows in position 50x50 """
+    if name not in janelas:
+        cv2.moveWindow(name, 50, 50)
+        janelas.append(name)
+
+    cv2.imshow(name, frame)
 
 
 def findRangeHSVColor(bgr, thresh=60):
@@ -26,15 +40,9 @@ def createMaskByColor(img, min, max):
 
     mask = cv2.inRange(hsv, min, max)
 
-    bitwise = cv2.bitwise_and(img, img, mask=mask)
+    open = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
-    res_bgr = cv2.cvtColor(bitwise, cv2.COLOR_HSV2BGR)
-
-    res_gray = cv2.cvtColor(bitwise, cv2.COLOR_BGR2GRAY)
-
-    _, thresh = cv2.threshold(res_gray, 127, 255, cv2.THRESH_OTSU)
-
-    close = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+    close = cv2.morphologyEx(open, cv2.MORPH_CLOSE, kernel)
 
     return close
 
@@ -43,9 +51,7 @@ def init():
 
     min, max = findRangeHSVColor(orange_color, 40)
 
-    idx = 0
-
-    while camera.isOpened():
+    while True:
 
         ret, frame = camera.read()
 
@@ -56,21 +62,18 @@ def init():
                             interpolation=cv2.INTER_CUBIC)
 
         mask = createMaskByColor(resize, min, max)
-        cv2.imshow("mask", mask)
+        show("mask", mask)
 
         contours, hier = cv2.findContours(
             mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         for cnt in contours:
             x, y, w, h = cv2.boundingRect(cnt)
+            cv2.rectangle(resize, (x, y), (x+w, y+h), orange_color, -1)
 
-            if(h >= (1.5) * w):
-                cv2.rectangle(resize, (x, y), (x+w, y+h), orange_color, -1)
+        show("frame", resize)
 
-        cv2.imshow("frame", resize)
-
-        k = cv2.waitKey(10)
-        if k == 27:  # press ESC to exit
+        if cv2.waitKey(30) & 0xFF == 27:
             break
 
     camera.release()
