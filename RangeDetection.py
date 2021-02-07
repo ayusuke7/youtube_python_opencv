@@ -3,11 +3,10 @@ import numpy as np
 
 
 # color in space BGR
-orange_color = [46, 64, 255]
-blue_color = [235, 173, 138]
+blue_color = [231, 195, 142]
+red_color = [89, 92, 214]
 
-kernel = np.ones((5, 5), np.uint8)
-camera = cv2.VideoCapture("sources/cubo.mkv")
+camera = cv2.VideoCapture("sources/futebol.mp4")
 
 janelas = []
 
@@ -24,7 +23,7 @@ def show(name, frame):
     cv2.imshow(name, frame)
 
 
-def findRangeHSVColor(bgr, thresh=60):
+def findRangeHSVColor(bgr, thresh=40):
 
     hsv = cv2.cvtColor(np.uint8([[bgr]]), cv2.COLOR_BGR2HSV)[0][0]
 
@@ -40,18 +39,20 @@ def createMaskByColor(img, min, max):
 
     mask = cv2.inRange(hsv, min, max)
 
-    open = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    kernel = np.ones((15, 15), np.uint8)
 
-    close = cv2.morphologyEx(open, cv2.MORPH_CLOSE, kernel)
+    close = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
     return close
 
 
 def init():
 
-    min, max = findRangeHSVColor(orange_color, 40)
+    frameskip = 1
 
-    while True:
+    min, max = findRangeHSVColor(red_color, 38)
+
+    while camera.isOpened():
 
         ret, frame = camera.read()
 
@@ -65,18 +66,31 @@ def init():
         show("mask", mask)
 
         contours, hier = cv2.findContours(
-            mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         for cnt in contours:
             x, y, w, h = cv2.boundingRect(cnt)
-            cv2.rectangle(resize, (x, y), (x+w, y+h), orange_color, -1)
+
+            if(h <= 20 and h >= (1.3)*w):
+
+                a = 4 if h <= 18 else 2
+                l = 4 if w <= 10 else 2
+
+                posX = x-10
+                posY = y-10
+
+                width = posX + (w*l)
+                height = posY + (h*a)
+
+                cv2.rectangle(resize, (posX, posY),
+                              (width, height), (255, 255, 255), 2)
 
         show("frame", resize)
 
-        if cv2.waitKey(30) & 0xFF == 27:
+        if cv2.waitKey(15) == 27:
             break
 
-    camera.release()
+    # camera.release()
     cv2.destroyAllWindows()
 
 
